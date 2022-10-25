@@ -136,21 +136,7 @@ export class Fxdx {
     }
 
     async batchCancelOrders(symbol: string, ids: string[]) {
-        for (const id of ids) {
-            const apiPath = `${this.ORDERS}/${symbol}/${id}`;
-            const apiPathEncoded = encodeURI(apiPath);
-
-            const {headers} = (new FxdxRequest(
-                this.tradingKey, 
-                this.address, 
-                apiPath
-            )).get();
-
-            await this.authDelete(headers, apiPathEncoded);
-        }
-
-        /* Something wrong with api. Returns 200 but no result
-        let apiPath = `${this.CANCEL_ORDER_BATCH}/${symbol}/${ids.join("|")}`
+        let apiPath = `${this.ORDERS}/${symbol}/${ids.join("_")}`;
         const apiPathEncoded = encodeURI(apiPath);
 
         const {headers} = (new FxdxRequest(
@@ -160,7 +146,6 @@ export class Fxdx {
         )).get();
 
         return await this.authDelete(headers, apiPathEncoded);
-        */
     }
 
     async getBalances() {
