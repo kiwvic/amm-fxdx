@@ -5,7 +5,7 @@ import {
 } from "./util";
 import {parse} from "ts-command-line-args";
 import axios from "axios";
-import {CONFIG_URL, QUERY_ORDERS_FROM, QUERY_ORDERS_PENDING, QUERY_ORDERS_SIZE, FIXED_NUMBER} from "./consts";
+import {CONFIG_URL, QUERY_ORDERS_FROM, QUERY_ORDERS_PENDING, FIXED_NUMBER} from "./consts";
 import {isMakeMarketNeeded} from "./checks";
 import {MarketMakerParams, ProgramOptions, Fxdx, FxDxBuy, FxDxSell, FxdxQueryOrder} from "./types";
 
@@ -28,6 +28,8 @@ async function makeMarket(params: MarketMakerParams) {
     const { symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
 
     const config = await getConfig()
+    const queryOrdersSize = config.bids.length + config.asks.length;
+
     let indexPrice = await getPrice(tokenId); 
 
     if (isNaN(indexPrice)) {
@@ -37,7 +39,7 @@ async function makeMarket(params: MarketMakerParams) {
       continue;
     }
 
-    const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, QUERY_ORDERS_SIZE, QUERY_ORDERS_PENDING);
+    const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
     const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
 
     const orderBook = openOrdersToOrderBook_(userOrdersRaw);

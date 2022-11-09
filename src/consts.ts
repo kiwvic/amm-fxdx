@@ -5,7 +5,6 @@ dotenv.config();
 export const CONFIG_URL = process.env.CONFIG_URL;
 
 export const QUERY_ORDERS_FROM = 0;
-export const QUERY_ORDERS_SIZE = 24;
 export const QUERY_ORDERS_PENDING = true;
 
 export const FIXED_NUMBER = 4;
