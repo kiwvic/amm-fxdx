@@ -54,3 +54,24 @@ export const getOrderBookFromConfig = (
 
   return {buy, sell};
 };
+
+
+export const getLowestPrices = (orders: any) => {
+  let sells: any = []
+  let buys: any = []
+
+  for (const order of orders) {
+    if (order.order_type == FxDxSell) {
+      sells.push(Number.parseFloat(order.price))
+    } else if (order.order_type == FxDxBuy) {
+      buys.push(Number.parseFloat(order.price))
+    }
+  }
+
+  return {sellPrice: Math.min(...sells), buyPrice: Math.max(...buys)}
+}
+
+
+export const getRandomArbitrary = (min: number, max: number) => {
+  return Math.round(Math.random() * (max - min) + min);
+}

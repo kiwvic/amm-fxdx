@@ -63,9 +63,7 @@
         {"quantity": 0.01, "spread": 0.22},
         {"quantity": 0.01, "spread": 0.23},
         {"quantity": 0.01, "spread": 0.24},
-        {"quantity": 0.01, "spread": 0.25},
-        {"quantity": 0.01, "spread": 0.26},
-        {"quantity": 0.01, "spread": 0.27}
+        {"quantity": 0.01, "spread": 0.25}
     ],
     "priceThreshold": 0.01,
     "quantityThreshold": 0.01

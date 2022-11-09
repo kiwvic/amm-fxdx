@@ -3,9 +3,11 @@ import CryptoJS from "crypto-js";
 
 export interface ProgramOptions {
   tradingKey: string;
+  tradingKeyHFT: string;
   symbol: string;
   apiUrl: string;
   address: string;
+  addressHFT: string;
   baseQuantity: number;
   quoteQuantity: number;
   orderDelayMs: number;
@@ -15,6 +17,7 @@ export interface ProgramOptions {
 
 export interface MarketMakerParams extends ProgramOptions {
   fxdx: Fxdx;
+  fxdxHFT: Fxdx;
 }
 
 interface OrderConfig {
@@ -72,9 +75,15 @@ export interface FxDxParameters {
     apiUrl: string;
 }
 
+export interface MandatoryHFTIter {
+    counter: number,
+    appeared: boolean
+}
+
 export class Fxdx {
     public readonly BALANCES = "/v3/balances";
     public readonly ORDERS = "/v3/orders";
+    public readonly ORDER = "/v3/order";
 
     private readonly tradingKey: string;
     private readonly address: string;
@@ -125,6 +134,24 @@ export class Fxdx {
             this.address,
             apiPath,
             orders
+        )).get();
+
+        const client = axios.create({
+            baseURL: this.apiUrl,
+            headers: headers
+        });
+
+        return await client.post(apiPath, body);
+    }
+
+    async makeOrder(order: FxdxOrder) {
+        const apiPath = this.ORDER;
+
+        const {headers, body} = (new FxdxRequest(
+            this.tradingKey, 
+            this.address,
+            apiPath,
+            [order]
         )).get();
 
         const client = axios.create({
