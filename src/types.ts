@@ -136,16 +136,29 @@ export class Fxdx {
     }
 
     async batchCancelOrders(symbol: string, ids: string[]) {
-        let apiPath = `${this.ORDERS}/${symbol}/${ids.join("_")}`;
-        const apiPathEncoded = encodeURI(apiPath);
+        for (const id of ids) {
+            const apiPath = `/v3/order/${symbol}/${id}`;
+            const apiPathEncoded = encodeURI(apiPath);
 
-        const {headers} = (new FxdxRequest(
-            this.tradingKey, 
-            this.address, 
-            apiPathEncoded
-        )).get();
+            const {headers} = (new FxdxRequest(
+                this.tradingKey, 
+                this.address, 
+                apiPath
+            )).get();
 
-        return await this.authDelete(headers, apiPathEncoded);
+            await this.authDelete(headers, apiPathEncoded);
+        }
+
+        // let apiPath = `${this.ORDERS}/${symbol}/${ids.join("_")}`;
+        // const apiPathEncoded = encodeURI(apiPath);
+
+        // const {headers} = (new FxdxRequest(
+        //     this.tradingKey, 
+        //     this.address, 
+        //     apiPathEncoded
+        // )).get();
+
+        // return await this.authDelete(headers, apiPathEncoded);
     }
 
     async getBalances() {
