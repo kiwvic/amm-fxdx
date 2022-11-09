@@ -1,19 +1,29 @@
 {
     "bids": [
+        {"quantity": 0.01, "spread": 0.17},
+        {"quantity": 0.01, "spread": 0.16},
+        {"quantity": 0.01, "spread": 0.15},
+        {"quantity": 0.01, "spread": 0.14},
+        {"quantity": 0.05, "spread": 0.13},
         {"quantity": 0.1, "spread": 0.12},
-        {"quantity": 0.1, "spread": 0.10},
+        {"quantity": 0.05, "spread": 0.10},
         {"quantity": 0.1, "spread": 0.08},
         {"quantity": 0.2, "spread": 0.06},
-        {"quantity": 0.1, "spread": 0.04},
+        {"quantity": 0.05, "spread": 0.04},
         {"quantity": 0.1, "spread": 0.02}
     ],
     "asks": [
         {"quantity": 0.1, "spread": 0.02},
-        {"quantity": 0.1, "spread": 0.04},
+        {"quantity": 0.05, "spread": 0.04},
         {"quantity": 0.1, "spread": 0.06},
         {"quantity": 0.2, "spread": 0.08},
-        {"quantity": 0.1, "spread": 0.10},
-        {"quantity": 0.1, "spread": 0.12}
+        {"quantity": 0.05, "spread": 0.10},
+        {"quantity": 0.1, "spread": 0.12},
+        {"quantity": 0.01, "spread": 0.13},
+        {"quantity": 0.01, "spread": 0.14},
+        {"quantity": 0.01, "spread": 0.15},
+        {"quantity": 0.01, "spread": 0.16},
+        {"quantity": 0.05, "spread": 0.17}
     ],
     "priceThreshold": 0.01,
     "quantityThreshold": 0.01
