@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 export const CONFIG_URL = process.env.CONFIG_URL;
+export const LOGFILE = "../fxdx.log";
 
 export const QUERY_ORDERS_FROM = 0;
 export const QUERY_ORDERS_PENDING = true;

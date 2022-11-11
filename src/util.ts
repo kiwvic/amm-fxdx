@@ -1,5 +1,8 @@
 import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak} from "./types";
-import {FIXED_NUMBER, SAME_ORDER_MAX_STREAK} from "./consts"
+import { readFileSync, writeFileSync, promises as fsPromises } from 'fs';
+import {FIXED_NUMBER, SAME_ORDER_MAX_STREAK, LOGFILE} from "./consts"
+import { join } from 'path';
+
 
 export async function sleep(n: number) {
   return new Promise((resolve) => setTimeout(resolve, n));
@@ -96,3 +99,8 @@ export const getConfig = async () => {
   // return (await axios.get(CONFIG_URL!)).data;
   return require("../order-config.json");
 };
+
+
+export function syncWriteFile(data: any) {
+  writeFileSync(join(__dirname, LOGFILE), data, { flag: 'w', });
+}

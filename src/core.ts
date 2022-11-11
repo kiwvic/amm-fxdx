@@ -5,7 +5,8 @@ import {
     getRandomArbitrary,
     getLowestPrices,
     orderTypeChangeIsNeeded,
-    getConfig
+    getConfig, 
+    syncWriteFile
 } from "./util";
 import {
     MarketMakerParams, 
@@ -20,7 +21,6 @@ import {
 } from "./consts";
 import axios from "axios";
 import {isMakeMarketNeeded} from "./checks";
-
 
 const client = axios.create({
 baseURL: "https://indexer.ref.finance/",
@@ -93,7 +93,11 @@ async function makeHFT(
     randomSleepTimeMs = getRandomArbitrary(1, 20) * 1000;
     await sleep(randomSleepTimeMs);
     console.log(`order:  ${JSON.stringify(order)}`);
-    await fxdxMock.makeOrder(order);
+
+    const response = await fxdxMock.makeOrder(order);
+    if (response.data.code != 200) {
+        syncWriteFile(JSON.stringify(response.data));
+    }
 
     return randomSleepTimeMs
 }
@@ -101,7 +105,6 @@ async function makeHFT(
 
 export async function makeMarket(params: MarketMakerParams) {
     let mandatoryHftIter: MandatoryHFTIter = {counter: 0, appeared: false};
-    let firstIter = true;  // TODO
     let orderTypeStreak: OrderTypeStreak = {counter: 0, type: 0};
 
     while (true) {
@@ -115,10 +118,10 @@ export async function makeMarket(params: MarketMakerParams) {
         let indexPrice = await getPrice(tokenId); 
 
         if (isNaN(indexPrice)) {
-        console.log("indexPrice is NaN. Skipping iteration.")
-        console.log(`Waiting ${orderDelayMs}ms`);
-        await sleep(orderDelayMs);
-        continue;
+            console.log("indexPrice is NaN. Skipping iteration.")
+            console.log(`Waiting ${orderDelayMs}ms`);
+            await sleep(orderDelayMs);
+            continue;
         }
 
         const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
@@ -128,44 +131,43 @@ export async function makeMarket(params: MarketMakerParams) {
         let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
         
         if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
-        const bidOrders = configOrders.buy.map((o) => ({
-            type: FxDxBuy,
-            symbol: symbol,
-            price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-            amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-        }));
+            const bidOrders = configOrders.buy.map((o) => ({
+                type: FxDxBuy,
+                symbol: symbol,
+                price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+            }));
 
-        const askOrders = configOrders.sell.map((o) => ({
-            type: FxDxSell,
-            symbol: symbol,
-            price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-            amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-        }));
+            const askOrders = configOrders.sell.map((o) => ({
+                type: FxDxSell,
+                symbol: symbol,
+                price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+            }));
+
+            try {
+                await fxdx.batchCancelOrders(symbol, userOrdersIds);
+
+                const batchOpsResponse = await fxdx.batchOrders([...bidOrders, ...askOrders]);
+                if (batchOpsResponse.data.code != 200) {
+                    syncWriteFile(JSON.stringify(batchOpsResponse.data));
+                }
+            } catch (e) {
+                syncWriteFile(e)
+            }
+        }
 
         try {
-            await fxdx.batchCancelOrders(symbol, userOrdersIds);
-
-            const batchOpsResponse = await fxdx.batchOrders([...bidOrders, ...askOrders]);
-            // console.log(batchOpsResponse);
-            console.log("batchOpsResponse success")
-
+            if (userOrdersRaw.length > 0) {
+                const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw)
+                randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
+                console.log(`randomSleepTimeMs:  ${randomSleepTimeMs}`);
+                console.log("")
+            } else {
+                console.log("userOrdersRaw.length = 0");
+            }
         } catch (e) {
-            console.log("Order failed", e);
-        }
-        }
-
-        try {
-        firstIter = false; // TODO
-        if (userOrdersRaw.length > 0 && !firstIter) {
-            const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw)
-            randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
-            console.log(`randomSleepTimeMs:  ${randomSleepTimeMs}`);
-            console.log("")
-        } else {
-            console.log("userOrdersRaw.length = 0");
-        }
-        } catch (e) {
-        console.log("HFT failed", e);
+            syncWriteFile(e)
         }
 
         console.log(`Waiting ${orderDelayMs}ms`);
