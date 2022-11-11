@@ -9,6 +9,8 @@ export const QUERY_ORDERS_PENDING = true;
 
 export const FIXED_NUMBER = 4;
 
+export const SAME_ORDER_MAX_STREAK = 5;
+
 export const HFT = true;
 export const HFT_CHANCE = 0.5;
 export const RANDOM_TOKEN_MIN = 100;

@@ -80,6 +80,11 @@ export interface MandatoryHFTIter {
     appeared: boolean
 }
 
+export interface OrderTypeStreak {
+    counter: number,
+    type: number
+}
+
 export class Fxdx {
     public readonly BALANCES = "/v3/balances";
     public readonly ORDERS = "/v3/orders";

@@ -1,5 +1,5 @@
-import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder} from "./types";
-import {FIXED_NUMBER} from "./consts"
+import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak} from "./types";
+import {FIXED_NUMBER, SAME_ORDER_MAX_STREAK} from "./consts"
 
 export async function sleep(n: number) {
   return new Promise((resolve) => setTimeout(resolve, n));
@@ -74,4 +74,19 @@ export const getLowestPrices = (orders: any) => {
 
 export const getRandomArbitrary = (min: number, max: number) => {
   return Math.round(Math.random() * (max - min) + min);
+}
+
+
+export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: OrderTypeStreak) => {
+  if (orderTypeStreak.type == orderType && orderTypeStreak.counter >= SAME_ORDER_MAX_STREAK) {
+    orderTypeStreak.counter = 0;
+    return true;
+  } else if (orderTypeStreak.type != orderType || orderTypeStreak.counter >= SAME_ORDER_MAX_STREAK) {
+    orderTypeStreak.type = orderType;
+    orderTypeStreak.counter = 0;
+  } else {
+    orderTypeStreak.counter += 1;
+  }
+
+  return false;
 }

@@ -3,13 +3,14 @@ import {
   getOrderBookFromConfig,
   openOrdersToOrderBook_,
   getRandomArbitrary,
-  getLowestPrices
+  getLowestPrices,
+  orderTypeChangeIsNeeded
 } from "./util";
 import {parse} from "ts-command-line-args";
 import axios from "axios";
 import {CONFIG_URL, QUERY_ORDERS_FROM, QUERY_ORDERS_PENDING, FIXED_NUMBER, RANDOM_TOKEN_MIN, RANDOM_TOKEN_MAX, HFT, MANDATORY_ITERATION_RECHARGE, HFT_CHANCE} from "./consts";
 import {isMakeMarketNeeded} from "./checks";
-import {MarketMakerParams, ProgramOptions, Fxdx, FxDxBuy, FxDxSell, FxdxQueryOrder, Order, FxDxParameters, FxdxOrder, MandatoryHFTIter} from "./types";
+import {MarketMakerParams, ProgramOptions, Fxdx, FxDxBuy, FxDxSell, FxdxQueryOrder, Order, FxDxParameters, FxdxOrder, MandatoryHFTIter, OrderTypeStreak} from "./types";
 
 const client = axios.create({
   baseURL: "https://indexer.ref.finance/",
@@ -27,7 +28,12 @@ export const getConfig = async () => {
 
 
 // TODO
-async function makeHFT(fxdxMock: Fxdx, symbol: string, buyLowestPrice: number, sellLowestPrice: number, mandatoryHftIter: MandatoryHFTIter) {
+async function makeHFT(
+  fxdxMock: Fxdx, symbol: string, 
+  buyLowestPrice: number, sellLowestPrice: number, 
+  mandatoryHftIter: MandatoryHFTIter,
+  orderTypeStreak: OrderTypeStreak
+  ) {
   let randomSleepTimeMs = 0;
 
   const rand = Math.random();
@@ -59,8 +65,15 @@ async function makeHFT(fxdxMock: Fxdx, symbol: string, buyLowestPrice: number, s
     } 
   }
 
-  const orderType = getRandomArbitrary(1, 2) - 1;
-  const randomAmount = getRandomArbitrary(RANDOM_TOKEN_MIN, RANDOM_TOKEN_MAX);
+  let randomAmount = getRandomArbitrary(RANDOM_TOKEN_MIN, RANDOM_TOKEN_MAX);
+  let orderType = getRandomArbitrary(1, 2) - 1;
+
+  if (orderTypeChangeIsNeeded(orderType, orderTypeStreak)) {
+    orderType == FxDxBuy ? FxDxSell : FxDxBuy;
+    randomAmount += 100;
+  }
+
+  console.log(JSON.stringify(orderTypeStreak))
 
   const price = orderType == FxDxBuy ? sellLowestPrice : buyLowestPrice;
   const parsedPrice = Number.parseFloat(price.toFixed(FIXED_NUMBER));
@@ -84,6 +97,7 @@ async function makeHFT(fxdxMock: Fxdx, symbol: string, buyLowestPrice: number, s
 async function makeMarket(params: MarketMakerParams) {
   let mandatoryHftIter: MandatoryHFTIter = {counter: 0, appeared: false};
   let firstIter = true;  // TODO
+  let orderTypeStreak: OrderTypeStreak = {counter: 0, type: 0};
 
   while (true) {
     const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
@@ -139,7 +153,7 @@ async function makeMarket(params: MarketMakerParams) {
       firstIter = false; // TODO
       if (userOrdersRaw.length > 0 && !firstIter) {
         const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw)
-        randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter);
+        randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
         console.log(`randomSleepTimeMs:  ${randomSleepTimeMs}`);
         console.log("")
       } else {
