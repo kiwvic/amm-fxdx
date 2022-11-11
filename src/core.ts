@@ -74,7 +74,7 @@ async function makeHFT(
     let orderType = getRandomArbitrary(1, 2) - 1;
 
     if (orderTypeChangeIsNeeded(orderType, orderTypeStreak)) {
-        orderType == FxDxBuy ? FxDxSell : FxDxBuy;
+        orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
         randomAmount += 100;
     }
 
