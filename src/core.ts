@@ -106,6 +106,7 @@ async function makeHFT(
 export async function makeMarket(params: MarketMakerParams) {
     let mandatoryHftIter: MandatoryHFTIter = {counter: 0, appeared: false};
     let orderTypeStreak: OrderTypeStreak = {counter: 0, type: 0};
+    let firstIter = true;
 
     while (true) {
         const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
@@ -130,6 +131,23 @@ export async function makeMarket(params: MarketMakerParams) {
         const orderBook = openOrdersToOrderBook_(userOrdersRaw);
         let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
         
+        if (firstIter) {
+            firstIter = false;
+        } else {
+            try {
+                if (userOrdersRaw.length > 0) {
+                    const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw)
+                    randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
+                    console.log(`randomSleepTimeMs:  ${randomSleepTimeMs}`);
+                    console.log("")
+                } else {
+                    console.log("userOrdersRaw.length = 0");
+                }
+            } catch (e) {
+                syncWriteFile(e)
+            }
+        }
+
         if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
             const bidOrders = configOrders.buy.map((o) => ({
                 type: FxDxBuy,
@@ -155,19 +173,6 @@ export async function makeMarket(params: MarketMakerParams) {
             } catch (e) {
                 syncWriteFile(e)
             }
-        }
-
-        try {
-            if (userOrdersRaw.length > 0) {
-                const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw)
-                randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
-                console.log(`randomSleepTimeMs:  ${randomSleepTimeMs}`);
-                console.log("")
-            } else {
-                console.log("userOrdersRaw.length = 0");
-            }
-        } catch (e) {
-            syncWriteFile(e)
         }
 
         console.log(`Waiting ${orderDelayMs}ms`);
