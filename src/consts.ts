@@ -9,6 +9,7 @@ export const QUERY_ORDERS_FROM = 0;
 export const QUERY_ORDERS_PENDING = true;
 
 export const FIXED_NUMBER = 4;
+export const PRICE_CHANGE_THRESHOLD_PERCENT = 1;
 
 export const SAME_ORDER_MAX_STREAK = 5;
 

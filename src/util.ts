@@ -104,3 +104,8 @@ export const getConfig = async () => {
 export function syncWriteFile(data: any) {
   writeFileSync(join(__dirname, LOGFILE), data, { flag: 'w', });
 }
+
+
+export function relDiff(a: any, b: any) {
+  return  100 * ( ( a - b ) / ( (a+b)/2 ) );
+ }

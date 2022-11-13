@@ -6,7 +6,8 @@ import {
     getLowestPrices,
     orderTypeChangeIsNeeded,
     getConfig, 
-    syncWriteFile
+    syncWriteFile,
+    relDiff
 } from "./util";
 import {
     MarketMakerParams, 
@@ -17,7 +18,7 @@ import {
     QUERY_ORDERS_FROM, QUERY_ORDERS_PENDING, 
     RANDOM_TOKEN_MIN, RANDOM_TOKEN_MAX, 
     HFT, MANDATORY_ITERATION_RECHARGE, HFT_CHANCE,
-    FIXED_NUMBER
+    FIXED_NUMBER, PRICE_CHANGE_THRESHOLD_PERCENT
 } from "./consts";
 import axios from "axios";
 import {isMakeMarketNeeded} from "./checks";
@@ -108,6 +109,8 @@ export async function makeMarket(params: MarketMakerParams) {
     let orderTypeStreak: OrderTypeStreak = {counter: 0, type: 0};
     let firstIter = true;
 
+    let indexPrice = await getPrice(params.tokenId);
+
     while (true) {
         const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
         let randomSleepTimeMs = 0;
@@ -116,7 +119,14 @@ export async function makeMarket(params: MarketMakerParams) {
 
         const queryOrdersSize = config.bids.length + config.asks.length;
 
-        let indexPrice = await getPrice(tokenId); 
+        let newIndexPrice = await getPrice(tokenId); 
+        let diff = relDiff(newIndexPrice, indexPrice);
+
+        if (diff > 0 && diff > PRICE_CHANGE_THRESHOLD_PERCENT) {
+            indexPrice += (indexPrice * (PRICE_CHANGE_THRESHOLD_PERCENT / 100));
+        } else if (diff < 0 && diff < (-1) * PRICE_CHANGE_THRESHOLD_PERCENT) {
+            indexPrice -= (indexPrice * (PRICE_CHANGE_THRESHOLD_PERCENT / 100));
+        }
 
         if (isNaN(indexPrice)) {
             console.log("indexPrice is NaN. Skipping iteration.")
