@@ -109,8 +109,7 @@ export const getProgramConfig = () => {
 export function log(data: any) {
   appendFileSync(
     join(__dirname, LOGFILE), 
-    `[${(new Date()).toLocaleString()}] ${data}`, 
-    { flag: 'w', }
+    `[${(new Date()).toLocaleString()}] ${data}\n`
   );
 }
 
