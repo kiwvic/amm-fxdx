@@ -27,6 +27,7 @@ import {
   } from "./consts";
   import axios from "axios";
   import { isMakeMarketNeeded } from "./checks";
+import { stringify } from "querystring";
 
 
 async function getPrice(tokenId: string) {
@@ -113,7 +114,7 @@ async function makeHFT(
 
     const response = await fxdxMock.makeOrder(order);
     if (response.data.code != 200) {
-        log(`HFT ${JSON.stringify(response.data)}`);
+        log(`HFT ${JSON.stringify(response.data)}\n${JSON.stringify(order)}`);
     }
 
     return randomSleepTimeMs
