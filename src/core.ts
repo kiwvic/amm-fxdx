@@ -5,7 +5,7 @@ import {
     getRandomArbitrary,
     getLowestPrices,
     orderTypeChangeIsNeeded,
-    getConfig, 
+    getOrderConfig, 
     log,
     relDiff
 } from "./util";
@@ -115,7 +115,7 @@ export async function makeMarket(params: MarketMakerParams) {
         const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
         let randomSleepTimeMs = 0;
 
-        const config = await getConfig()
+        const config = await getOrderConfig()
 
         const queryOrdersSize = config.bids.length + config.asks.length;
 

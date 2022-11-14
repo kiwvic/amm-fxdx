@@ -4,6 +4,11 @@ import CryptoJS from "crypto-js";
 export interface ProgramOptions {
   tradingKey: string;
   tradingKeyHFT: string;
+}
+
+export interface MarketMakerParams extends ProgramOptions {
+  fxdx: Fxdx;
+  fxdxHFT: Fxdx;
   symbol: string;
   apiUrl: string;
   address: string;
@@ -13,11 +18,6 @@ export interface ProgramOptions {
   orderDelayMs: number;
   configUrl: string;
   tokenId: string;
-}
-
-export interface MarketMakerParams extends ProgramOptions {
-  fxdx: Fxdx;
-  fxdxHFT: Fxdx;
 }
 
 interface OrderConfig {

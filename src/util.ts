@@ -95,9 +95,12 @@ export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: Orde
 }
 
   
-export const getConfig = async () => {
-  // return (await axios.get(CONFIG_URL!)).data;
+export const getOrderConfig = async () => {
   return require("../order-config.json");
+};
+
+export const getProgramConfig = () => {
+  return require("../config.json");
 };
 
 
