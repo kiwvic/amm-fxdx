@@ -1,6 +1,6 @@
 import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak} from "./types";
 import { readFileSync, writeFileSync, promises as fsPromises, appendFileSync } from 'fs';
-import {FIXED_NUMBER, SAME_ORDER_MAX_STREAK, LOGFILE} from "./consts"
+import {FIXED_NUMBER, LOGFILE} from "./consts"
 import { join } from 'path';
 
 
@@ -81,10 +81,12 @@ export const getRandomArbitrary = (min: number, max: number) => {
 
 
 export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: OrderTypeStreak) => {
-  if (orderTypeStreak.type == orderType && orderTypeStreak.counter >= SAME_ORDER_MAX_STREAK) {
+  const config = getProgramConfig()
+
+  if (orderTypeStreak.type == orderType && orderTypeStreak.counter >= config.sameOrderStreak) {
     orderTypeStreak.counter = 0;
     return true;
-  } else if (orderTypeStreak.type != orderType || orderTypeStreak.counter >= SAME_ORDER_MAX_STREAK) {
+  } else if (orderTypeStreak.type != orderType || orderTypeStreak.counter >= config.sameOrderStreak) {
     orderTypeStreak.type = orderType;
     orderTypeStreak.counter = 0;
   } else {
