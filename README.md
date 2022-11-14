@@ -3,5 +3,5 @@ yarn install
 
 # Fill .env vars
 
-screen -S amm-fxdx ./startbot.sh # run screen
+./startbot.sh # run screen
 ```
