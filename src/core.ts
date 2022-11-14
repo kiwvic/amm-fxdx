@@ -6,7 +6,7 @@ import {
     getLowestPrices,
     orderTypeChangeIsNeeded,
     getConfig, 
-    syncWriteFile,
+    log,
     relDiff
 } from "./util";
 import {
@@ -97,7 +97,7 @@ async function makeHFT(
 
     const response = await fxdxMock.makeOrder(order);
     if (response.data.code != 200) {
-        syncWriteFile(JSON.stringify(response.data));
+        log(`HFT ${JSON.stringify(response.data)}`);
     }
 
     return randomSleepTimeMs
@@ -154,7 +154,7 @@ export async function makeMarket(params: MarketMakerParams) {
                     console.log("userOrdersRaw.length = 0");
                 }
             } catch (e) {
-                syncWriteFile(e)
+                log(e)
             }
         }
 
@@ -178,10 +178,10 @@ export async function makeMarket(params: MarketMakerParams) {
 
                 const batchOpsResponse = await fxdx.batchOrders([...bidOrders, ...askOrders]);
                 if (batchOpsResponse.data.code != 200) {
-                    syncWriteFile(JSON.stringify(batchOpsResponse.data));
+                    log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
                 }
             } catch (e) {
-                syncWriteFile(e)
+                log(`makeMarket ${e}`)
             }
         }
 

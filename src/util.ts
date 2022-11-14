@@ -1,5 +1,5 @@
 import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak} from "./types";
-import { readFileSync, writeFileSync, promises as fsPromises } from 'fs';
+import { readFileSync, writeFileSync, promises as fsPromises, appendFileSync } from 'fs';
 import {FIXED_NUMBER, SAME_ORDER_MAX_STREAK, LOGFILE} from "./consts"
 import { join } from 'path';
 
@@ -101,8 +101,12 @@ export const getConfig = async () => {
 };
 
 
-export function syncWriteFile(data: any) {
-  writeFileSync(join(__dirname, LOGFILE), data, { flag: 'w', });
+export function log(data: any) {
+  appendFileSync(
+    join(__dirname, LOGFILE), 
+    `[${(new Date()).toLocaleString()}] ${data}`, 
+    { flag: 'w', }
+  );
 }
 
 
