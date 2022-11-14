@@ -28,8 +28,8 @@ baseURL: "https://indexer.ref.finance/",
 });
 
 export const getPrice = async (tokenId: string) => {
-return client.get("get-token-price", {params: {token_id: tokenId}})
-    .then((res) => {return res.data.price}) as unknown as number;
+    return client.get("get-token-price", {params: {token_id: tokenId}})
+        .then((res) => {return Number(res.data.price)}) as unknown as number;
 };
 
 
@@ -140,7 +140,7 @@ export async function makeMarket(params: MarketMakerParams) {
 
         const orderBook = openOrdersToOrderBook_(userOrdersRaw);
         let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
-        
+
         if (firstIter) {
             firstIter = false;
         } else {
