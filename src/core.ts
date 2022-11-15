@@ -24,6 +24,7 @@ import {
   QUERY_ORDERS_FROM,
   QUERY_ORDERS_PENDING,
   FIXED_NUMBER,
+  CANCEL_LAST_HFT_ORDERS,
 } from "./consts";
 import axios from "axios";
 import { isMakeMarketNeeded } from "./checks";
@@ -146,6 +147,11 @@ async function makeHFT(
     });
 
     if (response.data.code != 200) { log(`HFT ${JSON.stringify(response.data)}`); }
+
+    // TODO
+    const userOrdersRaw = await fxdxHFT.getQueryOrders(symbol, QUERY_ORDERS_FROM, CANCEL_LAST_HFT_ORDERS, QUERY_ORDERS_PENDING);
+    const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
+    await fxdxHFT.batchCancelOrders(symbol, userOrdersIds);
 
     randomSleepTimeMs = getRandomArbitrary(1, 20) * 1000;
     await sleep(randomSleepTimeMs);
