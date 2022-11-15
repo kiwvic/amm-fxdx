@@ -1,33 +1,32 @@
 import {
-    sleep,
-    getOrderBookFromConfig,
-    openOrdersToOrderBook_,
-    getRandomArbitrary,
-    getLowestPrices,
-    orderTypeChangeIsNeeded,
-    getOrderConfig,
-    relDiff,
-    log,
-    getProgramConfig,
-  } from "./util";
-  import {
-    MarketMakerParams,
-    Fxdx,
-    FxDxBuy,
-    FxDxSell,
-    FxdxQueryOrder,
-    FxdxOrder,
-    MandatoryHFTIter,
-    OrderTypeStreak,
-  } from "./types";
-  import {
-    QUERY_ORDERS_FROM,
-    QUERY_ORDERS_PENDING,
-    FIXED_NUMBER,
-  } from "./consts";
-  import axios from "axios";
-  import { isMakeMarketNeeded } from "./checks";
-import { stringify } from "querystring";
+  sleep, 
+  getOrderBookFromConfig,
+  openOrdersToOrderBook_,
+  getRandomArbitrary,
+  orderTypeChangeIsNeeded,
+  getOrderConfig,
+  relDiff,
+  log,
+  getProgramConfig,
+  calculateBestPrice,
+} from "./util";
+import {
+  MarketMakerParams,
+  Fxdx,
+  FxDxBuy,
+  FxDxSell,
+  FxdxQueryOrder,
+  FxdxOrder,
+  MandatoryHFTIter,
+  OrderTypeStreak,
+} from "./types";
+import {
+  QUERY_ORDERS_FROM,
+  QUERY_ORDERS_PENDING,
+  FIXED_NUMBER,
+} from "./consts";
+import axios from "axios";
+import { isMakeMarketNeeded } from "./checks";
 
 
 async function getPrice(tokenId: string) {
@@ -54,9 +53,9 @@ function changeIndexPrice(price: number, newPrice: number) {
 
 
 async function makeHFT(
-        fxdxMock: Fxdx, 
+        fxdx : Fxdx,
+        fxdxHFT: Fxdx, 
         symbol: string, 
-        buyLowestPrice: number, sellLowestPrice: number, 
         mandatoryHftIter: MandatoryHFTIter,
         orderTypeStreak: OrderTypeStreak
     ) {
@@ -91,33 +90,67 @@ async function makeHFT(
     let randomAmount = getRandomArbitrary(config.randomTokenMin, config.randomTokenMax);
     let orderType = getRandomArbitrary(1, 2) - 1;
 
-    if (orderTypeChangeIsNeeded(orderType, orderTypeStreak)) {
+    const balances = await fxdxHFT.getBalances();
+    const usdtBalance = balances.find((el: any) => el.name == "USDT");
+    const pemBalance = balances.find((el: any) => el.name == "PEM");
+
+    const orderBookResponse = (await fxdxHFT.getOrderbook(symbol));
+    if (orderBookResponse.data.code != 200) { return randomSleepTimeMs; } 
+
+    const orderBook = orderBookResponse.data.data;
+    const bestAskPrice = parseFloat(Number(orderBook.asks[0][0]).toFixed(FIXED_NUMBER));
+    const bestBidPrice = parseFloat(Number(orderBook.bids[0][0]).toFixed(FIXED_NUMBER));
+
+    let price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+
+    let forceChangeOrderType = false;
+
+    if (orderType == FxDxBuy) {
+        if (usdtBalance.available < randomAmount * price) {
+            orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
+            price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+            forceChangeOrderType = true;
+        }
+    } else {
+        if (pemBalance.available < randomAmount) {
+            orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
+            price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+            forceChangeOrderType = true;
+        }
+    }
+
+    if (usdtBalance.available < randomAmount * price && pemBalance.available < randomAmount) {
+        log(`HFT not enough funds on each balance!`);
+        return randomSleepTimeMs;
+    }
+    
+    if (orderTypeChangeIsNeeded(orderType, orderTypeStreak) && !forceChangeOrderType) {
         orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
         randomAmount += 100;
     }
 
-    const price = orderType == FxDxBuy ? sellLowestPrice : buyLowestPrice;
-    const parsedPrice = Number.parseFloat(price.toFixed(FIXED_NUMBER));
-
-    const order: FxdxOrder = {
-        type: orderType,
+    let response = await fxdx.makeOrder({
+        type: orderType == FxDxBuy ? FxDxSell : FxDxBuy,
         symbol: symbol,
-        price: parsedPrice, 
+        price: price, 
         amount: randomAmount
-    }
+    });
+
+    if (response.data.code != 200) { return randomSleepTimeMs; }
+
+    response = await fxdxHFT.makeOrder({
+            type: orderType,
+            symbol: symbol,
+            price: price, 
+            amount: randomAmount
+    });
+
+    if (response.data.code != 200) { log(`HFT ${JSON.stringify(response.data)}`); }
 
     randomSleepTimeMs = getRandomArbitrary(1, 20) * 1000;
     await sleep(randomSleepTimeMs);
 
-    console.log(JSON.stringify(orderTypeStreak));
-    console.log(`order:  ${JSON.stringify(order)}`);
-
-    const response = await fxdxMock.makeOrder(order);
-    if (response.data.code != 200) {
-        log(`HFT ${JSON.stringify(response.data)}\n${JSON.stringify(order)}`);
-    }
-
-    return randomSleepTimeMs
+    return randomSleepTimeMs;
 }
 
 
@@ -145,9 +178,10 @@ export async function makeMarket(params: MarketMakerParams) {
         let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
 
         if (userOrdersRaw.length > 0) {
-            const {buyPrice, sellPrice} = getLowestPrices(userOrdersRaw);
-            randomSleepTimeMs = await makeHFT(fxdxHFT, symbol, buyPrice, sellPrice, mandatoryHftIter, orderTypeStreak);
+            randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
         }
+
+        return;
 
         if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
             const orders = [

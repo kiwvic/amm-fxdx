@@ -89,6 +89,7 @@ export class Fxdx {
     public readonly BALANCES = "/v3/balances";
     public readonly ORDERS = "/v3/orders";
     public readonly ORDER = "/v3/order";
+    public readonly ORDERBOOK = "/v3/depth";
 
     private readonly tradingKey: string;
     private readonly address: string;
@@ -217,6 +218,12 @@ export class Fxdx {
         )).get();
 
         return (await this.authGet(headers, apiPath, queryParams)).data.data;
+    }
+
+    async getOrderbook(symbol: string) {
+        const client = axios.create({baseURL: this.apiUrl});
+
+        return await client.get(`${this.ORDERBOOK}/${symbol}`);
     }
 }
 

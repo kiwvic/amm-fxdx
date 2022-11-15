@@ -9,10 +9,11 @@
     "orderDelayMs": 30000,
 
     "hft": true,
-    "hftChance": 0.5,
+    "hftChance": 0.9,
+    "orderPricePercentHft": 1,
     "randomTokenMin": 100,
     "randomTokenMax": 300,
     "mandatoryIterationRecharge": 2,
-    "sameOrderStreak": 5,
+    "sameOrderStreak": 3,
     "priceChangeThresholdPercent": 1
 }
