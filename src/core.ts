@@ -181,8 +181,6 @@ export async function makeMarket(params: MarketMakerParams) {
             randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
         }
 
-        return;
-
         if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
             const orders = [
                 ...configOrders.buy.map((o) => ({
