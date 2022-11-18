@@ -166,54 +166,58 @@ export async function makeMarket(params: MarketMakerParams) {
     let indexPrice = await getPrice(params.tokenId);
 
     while (true) {
-        const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
-        let randomSleepTimeMs = 0;
-        const config = await getOrderConfig()
-        const queryOrdersSize = config.bids.length + config.asks.length;
-        
-        indexPrice = changeIndexPrice(indexPrice, await getPrice(tokenId));
-        if (isNaN(indexPrice)) {
-            await sleep(orderDelayMs);
-            continue;
-        }
-
-        const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
-        const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
-
-        const orderBook = openOrdersToOrderBook_(userOrdersRaw);
-        let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
-
-        if (userOrdersRaw.length > 0) {
-            randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
-        }
-
-        if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
-            const orders = [
-                ...configOrders.buy.map((o) => ({
-                    type: FxDxBuy, symbol: symbol,
-                    price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-                    amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-                })),
-                ...configOrders.sell.map((o) => ({
-                    type: FxDxSell, symbol: symbol,
-                    price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-                    amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-                }))
-            ];
-
-            try {
-                await fxdx.batchCancelOrders(symbol, userOrdersIds);
-
-                const batchOpsResponse = await fxdx.batchOrders(orders);
-                if (batchOpsResponse.data.code != 200) {
-                    log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
-                }
-            } catch (e) {
-                log(`makeMarket ${e}`);
+        try {
+            const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
+            let randomSleepTimeMs = 0;
+            const config = await getOrderConfig()
+            const queryOrdersSize = config.bids.length + config.asks.length;
+            
+            indexPrice = changeIndexPrice(indexPrice, await getPrice(tokenId));
+            if (isNaN(indexPrice)) {
+                await sleep(orderDelayMs);
+                continue;
             }
-        }
 
-        console.log(`Waiting ${orderDelayMs}ms`);
-        await sleep(orderDelayMs - randomSleepTimeMs);
+            const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
+            const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
+
+            const orderBook = openOrdersToOrderBook_(userOrdersRaw);
+            let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
+
+            if (userOrdersRaw.length > 0) {
+                randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
+            }
+
+            if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
+                const orders = [
+                    ...configOrders.buy.map((o) => ({
+                        type: FxDxBuy, symbol: symbol,
+                        price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                        amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+                    })),
+                    ...configOrders.sell.map((o) => ({
+                        type: FxDxSell, symbol: symbol,
+                        price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                        amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+                    }))
+                ];
+
+                try {
+                    await fxdx.batchCancelOrders(symbol, userOrdersIds);
+
+                    const batchOpsResponse = await fxdx.batchOrders(orders);
+                    if (batchOpsResponse.data.code != 200) {
+                        log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
+                    }
+                } catch (e) {
+                    log(`makeMarket ${e}`);
+                }
+            }
+
+            console.log(`Waiting ${orderDelayMs}ms`);
+            await sleep(orderDelayMs - randomSleepTimeMs);
+        } catch (e) {
+            log(`main ${e}`);
+        }
     }
 }
