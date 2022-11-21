@@ -1,4 +1,4 @@
-import { OrderBook, Order } from "./types";
+import { OrderBook, Order, Fxdx } from "./types";
 
 const amountOfOrdersChanged = (currentOrders: any, configOrders: any) => {
   return currentOrders.buy.length !== configOrders.buy.length || currentOrders.sell.length !== configOrders.sell.length;
@@ -57,3 +57,7 @@ export const isMakeMarketNeeded = (
 
   return false;
 };
+
+export const notEnoughFunds = (balance: any, amount: number, price: number) => {
+  return balance.quote.available < amount * price && balance.base.available < amount;
+}

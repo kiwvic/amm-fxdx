@@ -1,5 +1,8 @@
 {
+    "baseTag": "PEM",
+    "quoteTag": "USDT",
     "symbol": "pemusdt",
+
     "address": "5EvmfGA8BuG3u7B4REVKdkS1bVV2xjenVakAzVevxyvtbey8",
     "addressHFT": "5FZjgtxe4yEaMsvKbqoawo59AnfxUt2YM9NdU7Jo4CFWqKGy",
     "tokenId": "token.pembrock.near",

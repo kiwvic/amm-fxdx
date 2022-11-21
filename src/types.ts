@@ -194,7 +194,7 @@ export class Fxdx {
         return await this.authDelete(headers, apiPathEncoded);
     }
 
-    async getBalances() {
+    async getBalances(base_: string, quote_: string) {
         const apiPath = this.BALANCES;
 
         const {headers} = (new FxdxRequest(
@@ -202,8 +202,13 @@ export class Fxdx {
             this.address, 
             apiPath
         )).get();
+        
+        const balances = (await this.authGet(headers, apiPath)).data.data
 
-        return (await this.authGet(headers, apiPath)).data.data;
+        return {
+            base: balances.find((el: any) => el.name == base_),
+            quote: balances.find((el: any) => el.name == quote_)
+        }
     }
 
     async getQueryOrders(symbol: string, from: number, size: number, pending: boolean) {

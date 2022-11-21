@@ -27,7 +27,7 @@ import {
   CANCEL_LAST_HFT_ORDERS,
 } from "./consts";
 import axios from "axios";
-import { isMakeMarketNeeded } from "./checks";
+import { isMakeMarketNeeded, notEnoughFunds } from "./checks";
 
 
 async function getPrice(tokenId: string) {
@@ -91,9 +91,8 @@ async function makeHFT(
     let randomAmount = getRandomArbitrary(config.randomTokenMin, config.randomTokenMax);
     let orderType = getRandomArbitrary(1, 2) - 1;
 
-    const balances = await fxdxHFT.getBalances();
-    const usdtBalance = balances.find((el: any) => el.name == "USDT");
-    const pemBalance = balances.find((el: any) => el.name == "PEM");
+    const balances = await fxdx.getBalances(config.baseTag, config.quoteTag);
+    const balancesHFT = await fxdxHFT.getBalances(config.baseTag, config.quoteTag);
 
     const orderBookResponse = (await fxdxHFT.getOrderbook(symbol));
     if (orderBookResponse.data.code != 200) { return randomSleepTimeMs; } 
@@ -104,25 +103,24 @@ async function makeHFT(
 
     let price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
 
-    let forceChangeOrderType = false;
+    if (notEnoughFunds(balances, randomAmount, price) && notEnoughFunds(balancesHFT, randomAmount, price)) {
+        log(`Not enough funds on each balance!`);
+        return randomSleepTimeMs;
+    }
 
+    let forceChangeOrderType = false;
     if (orderType == FxDxBuy) {
-        if (usdtBalance.available < randomAmount * price) {
+        if (balancesHFT.quote.available < randomAmount * price || balances.base.available < randomAmount) {
             orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
             price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
             forceChangeOrderType = true;
         }
     } else {
-        if (pemBalance.available < randomAmount) {
+        if (balancesHFT.base.available < randomAmount || balances.quote.available < randomAmount * price) {
             orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
             price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
             forceChangeOrderType = true;
         }
-    }
-
-    if (usdtBalance.available < randomAmount * price && pemBalance.available < randomAmount) {
-        log(`HFT not enough funds on each balance!`);
-        return randomSleepTimeMs;
     }
     
     if (orderTypeChangeIsNeeded(orderType, orderTypeStreak) && !forceChangeOrderType) {
