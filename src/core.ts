@@ -25,13 +25,14 @@ import {
   QUERY_ORDERS_PENDING,
   FIXED_NUMBER,
   CANCEL_LAST_HFT_ORDERS,
+  AXIOS_TIMEOUT_MS
 } from "./consts";
 import axios from "axios";
 import { isMakeMarketNeeded, notEnoughFunds } from "./checks";
 
 
 async function getPrice(tokenId: string) {
-    const client = axios.create({baseURL: "https://indexer.ref.finance/"});
+    const client = axios.create({baseURL: "https://indexer.ref.finance/", timeout: AXIOS_TIMEOUT_MS});
 
     return client.get("get-token-price", {params: {token_id: tokenId}})
         .then((res) => {return Number(res.data.price)}) as unknown as number;

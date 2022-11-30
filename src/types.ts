@@ -1,5 +1,6 @@
 import axios from "axios";
 import CryptoJS from "crypto-js";
+import {AXIOS_TIMEOUT_MS} from "./consts";
 
 export interface ProgramOptions {
   tradingKey: string;
@@ -106,7 +107,8 @@ export class Fxdx {
     async post(headers: any, data: any, query: string) {
         const client = axios.create({
             baseURL: this.apiUrl,
-            headers: headers
+            headers: headers,
+            timeout: AXIOS_TIMEOUT_MS
         });
         
         return await client.post(query, JSON.stringify(data));
@@ -116,6 +118,7 @@ export class Fxdx {
         const client = axios.create({
             baseURL: this.apiUrl,
             headers: headers,
+            timeout: AXIOS_TIMEOUT_MS,
         });
 
         return await client.get(query, {params: queryParams});
@@ -127,6 +130,7 @@ export class Fxdx {
         const client = axios.create({
             baseURL: this.apiUrl,
             headers: headers,
+            timeout: AXIOS_TIMEOUT_MS
         });
 
         return await client.delete(query, {params: queryParams});
@@ -144,7 +148,8 @@ export class Fxdx {
 
         const client = axios.create({
             baseURL: this.apiUrl,
-            headers: headers
+            headers: headers,
+            timeout: AXIOS_TIMEOUT_MS
         });
 
         return await client.post(apiPath, body);
@@ -162,7 +167,8 @@ export class Fxdx {
 
         const client = axios.create({
             baseURL: this.apiUrl,
-            headers: headers
+            headers: headers,
+            timeout: AXIOS_TIMEOUT_MS
         });
 
         return await client.post(apiPath, body);
@@ -226,7 +232,7 @@ export class Fxdx {
     }
 
     async getOrderbook(symbol: string) {
-        const client = axios.create({baseURL: this.apiUrl});
+        const client = axios.create({baseURL: this.apiUrl, timeout: AXIOS_TIMEOUT_MS});
 
         return await client.get(`${this.ORDERBOOK}/${symbol}`);
     }
