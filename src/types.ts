@@ -3,22 +3,34 @@ import CryptoJS from "crypto-js";
 import {AXIOS_TIMEOUT_MS} from "./consts";
 
 export interface ProgramOptions {
+  address: string;
+  addressHFT: string
   tradingKey: string;
   tradingKeyHFT: string;
+
+  baseTag: string;
+  quoteTag: string;
+  symbol: string;
+  tokenId: string;
+  apiUrl: string;
+
+  baseQuantity: number;
+  quoteQuantity: number;
+  orderDelayMs: number;
+
+  hft: boolean;
+  hftChance: number;
+  orderPricePercentHft: number;
+  randomTokenMin: number;
+  randomTokenMax: number;
+  mandatoryIterationRecharge: number;
+  sameOrderStreak: number;
+  priceChangeThresholdPercent: number;
 }
 
 export interface MarketMakerParams extends ProgramOptions {
   fxdx: Fxdx;
   fxdxHFT: Fxdx;
-  symbol: string;
-  apiUrl: string;
-  address: string;
-  addressHFT: string;
-  baseQuantity: number;
-  quoteQuantity: number;
-  orderDelayMs: number;
-  configUrl: string;
-  tokenId: string;
 }
 
 interface OrderConfig {

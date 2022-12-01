@@ -1,4 +1,4 @@
-import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak} from "./types";
+import {Config, Order, FxDxBuy, FxDxSell, FxdxQueryOrder, OrderTypeStreak, ProgramOptions} from "./types";
 import { readFileSync, writeFileSync, promises as fsPromises, appendFileSync } from 'fs';
 import {FIXED_NUMBER, LOGFILE} from "./consts"
 import { join } from 'path';
@@ -97,7 +97,7 @@ export const getOrderConfig = async () => {
   return require("../order-config.json");
 };
 
-export const getProgramConfig = () => {
+export const getProgramConfig = (): ProgramOptions => {
   return require("../config.json");
 };
 
