@@ -173,7 +173,7 @@ export class Fxdx {
 
         const response = await client.post(apiPath, body);
 
-        if (response.status != 200) { throw new Error(`makeOrder. status != 200. ${response.data}`); }
+        if (response.status >= 300) { throw new Error(`makeOrder. status != 200. ${response.data}`); }
     }
 
     async batchCancelOrders(symbol: string, ids: string[]) {
@@ -213,7 +213,7 @@ export class Fxdx {
         
         const response = await this.authGet(headers, apiPath);
 
-        if (response.status != 200) { throw new Error(`getBalances. status != 200. ${response.data}`); }
+        if (response.status >= 300) { throw new Error(`getBalances. status != 200. ${response.data}`); }
 
         const balances = (response).data.data;
 
@@ -236,7 +236,7 @@ export class Fxdx {
 
         const response = await this.authGet(headers, apiPath, queryParams);
 
-        if (response.status != 200) { throw new Error(`getQueryOrders. status != 200. ${response.data}`); }
+        if (response.status >= 300) { throw new Error(`getQueryOrders. status != 200. ${response.data}`); }
 
         return (response).data.data;
     }
@@ -245,7 +245,7 @@ export class Fxdx {
         const client = axios.create({baseURL: this.apiUrl, timeout: AXIOS_TIMEOUT_MS});
         const response = await client.get(`${this.ORDERBOOK}/${symbol}`);
 
-        if (response.status != 200) { throw new Error(`getOrderbook. status != 200. ${response.data}`); }
+        if (response.status >= 300) { throw new Error(`getOrderbook. status != 200. ${response.data}`); }
 
         return response.data;
     }

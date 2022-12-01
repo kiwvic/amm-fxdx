@@ -180,8 +180,8 @@ export async function makeMarket(params: MarketMakerParams) {
         let newPrice;
         try {
             newPrice = await getPrice(tokenId);
-        } catch(e) {
-            log(e);
+        } catch(e: any) {
+            log(e.message);
             await sleep(orderDelayMs);
             continue;
         }
@@ -192,8 +192,8 @@ export async function makeMarket(params: MarketMakerParams) {
         try {
             userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
             userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
-        } catch (e) {
-            log(e);
+        } catch (e: any) {
+            log(e.message);
             await sleep(orderDelayMs);
             continue;
         }
@@ -204,8 +204,8 @@ export async function makeMarket(params: MarketMakerParams) {
         if (userOrdersRaw.length > 0) {
             try {
                 randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
-            } catch (e) {
-                log(e);
+            } catch (e: any) {
+                log(e.message);
                 await sleep(orderDelayMs);
                 continue;
             }
@@ -232,8 +232,8 @@ export async function makeMarket(params: MarketMakerParams) {
                 if (batchOpsResponse.data.code != 200) {
                     log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
                 }
-            } catch (e) {
-                log(`makeMarket ${e}`);
+            } catch (e: any) {
+                log(`makeMarket ${e.message}`);
             }
         }
 
