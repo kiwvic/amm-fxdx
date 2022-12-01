@@ -5,8 +5,8 @@ import {AXIOS_TIMEOUT_MS} from "./consts";
 export interface ProgramOptions {
   address: string;
   addressHFT: string
-  tradingKey: string;
-  tradingKeyHFT: string;
+  tradekey: string;
+  tradeKeyHFT: string;
 
   baseTag: string;
   quoteTag: string;
