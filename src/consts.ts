@@ -13,3 +13,5 @@ export const FIXED_NUMBER = 4;
 export const CANCEL_LAST_HFT_ORDERS = 3;
 
 export const AXIOS_TIMEOUT_MS = 20000;
+
+export const ERROR_TIMEOUT_MS = 10000;

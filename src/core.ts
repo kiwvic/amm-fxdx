@@ -16,7 +16,6 @@ import {
   FxDxBuy,
   FxDxSell,
   FxdxQueryOrder,
-  FxdxOrder,
   MandatoryHFTIter,
   OrderTypeStreak,
 } from "./types";
@@ -25,9 +24,10 @@ import {
   QUERY_ORDERS_PENDING,
   FIXED_NUMBER,
   CANCEL_LAST_HFT_ORDERS,
-  AXIOS_TIMEOUT_MS
+  AXIOS_TIMEOUT_MS,
+  ERROR_TIMEOUT_MS
 } from "./consts";
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { isMakeMarketNeeded, notEnoughFunds } from "./checks";
 
 
@@ -35,7 +35,12 @@ async function getPrice(tokenId: string) {
     const client = axios.create({baseURL: "https://indexer.ref.finance/", timeout: AXIOS_TIMEOUT_MS});
 
     return client.get("get-token-price", {params: {token_id: tokenId}})
-        .then((res) => {return Number(res.data.price)}) as unknown as number;
+        .then((res: AxiosResponse) => {
+            if (res.status != 200) { throw new Error(`getPrice. status != 200. ${res.data}`); }
+            if (isNaN(res.data.price)) { throw new Error(`getPrice. price is NaN. ${res.data}`); }
+
+            return Number(res.data.price);
+        });
 };
 
 
@@ -95,10 +100,13 @@ async function makeHFT(
     const balances = await fxdx.getBalances(config.baseTag, config.quoteTag);
     const balancesHFT = await fxdxHFT.getBalances(config.baseTag, config.quoteTag);
 
-    const orderBookResponse = (await fxdxHFT.getOrderbook(symbol));
-    if (orderBookResponse.data.code != 200) { return randomSleepTimeMs; } 
+    let orderBook;
+    try {
+        orderBook = (await fxdxHFT.getOrderbook(symbol)).data;
+    } catch (e) {
+        return randomSleepTimeMs; 
+    }
 
-    const orderBook = orderBookResponse.data.data;
     const bestAskPrice = parseFloat(Number(orderBook.asks[0][0]).toFixed(FIXED_NUMBER));
     const bestBidPrice = parseFloat(Number(orderBook.bids[0][0]).toFixed(FIXED_NUMBER));
 
@@ -129,25 +137,24 @@ async function makeHFT(
         randomAmount += 100;
     }
 
-    let response = await fxdx.makeOrder({
-        type: orderType == FxDxBuy ? FxDxSell : FxDxBuy,
-        symbol: symbol,
-        price: price, 
-        amount: randomAmount
-    });
-
-    if (response.data.code != 200) { return randomSleepTimeMs; }
-
-    response = await fxdxHFT.makeOrder({
+    // TODO cancel first order if something wrong with second
+    try {
+        await fxdx.makeOrder({
+            type: orderType == FxDxBuy ? FxDxSell : FxDxBuy,
+            symbol: symbol,
+            price: price, 
+            amount: randomAmount
+        });
+        await fxdxHFT.makeOrder({
             type: orderType,
             symbol: symbol,
             price: price, 
             amount: randomAmount
-    });
+        });
+    } catch (e) {
+        return randomSleepTimeMs;
+    }
 
-    if (response.data.code != 200) { log(`HFT ${JSON.stringify(response.data)}`); }
-
-    // TODO
     const userOrdersRaw = await fxdxHFT.getQueryOrders(symbol, QUERY_ORDERS_FROM, CANCEL_LAST_HFT_ORDERS, QUERY_ORDERS_PENDING);
     const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
     await fxdxHFT.batchCancelOrders(symbol, userOrdersIds);
@@ -165,58 +172,72 @@ export async function makeMarket(params: MarketMakerParams) {
     let indexPrice = await getPrice(params.tokenId);
 
     while (true) {
+        const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
+        let randomSleepTimeMs = 0;
+        const config = await getOrderConfig()
+        const queryOrdersSize = config.bids.length + config.asks.length;
+        
+        let newPrice;
         try {
-            const { fxdxHFT, symbol, fxdx, orderDelayMs, baseQuantity, quoteQuantity, tokenId } = params;
-            let randomSleepTimeMs = 0;
-            const config = await getOrderConfig()
-            const queryOrdersSize = config.bids.length + config.asks.length;
-            
-            indexPrice = changeIndexPrice(indexPrice, await getPrice(tokenId));
-            if (isNaN(indexPrice)) {
+            newPrice = await getPrice(tokenId);
+        } catch(e) {
+            log(e);
+            await sleep(orderDelayMs);
+            continue;
+        }
+        indexPrice = changeIndexPrice(indexPrice, newPrice);
+        
+        let userOrdersRaw;
+        let userOrdersIds;
+        try {
+            userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
+            userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
+        } catch (e) {
+            log(e);
+            await sleep(orderDelayMs);
+            continue;
+        }
+
+        const orderBook = openOrdersToOrderBook_(userOrdersRaw);
+        let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
+
+        if (userOrdersRaw.length > 0) {
+            try {
+                randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
+            } catch (e) {
+                log(e);
                 await sleep(orderDelayMs);
                 continue;
             }
-
-            const userOrdersRaw = await fxdx.getQueryOrders(symbol, QUERY_ORDERS_FROM, queryOrdersSize, QUERY_ORDERS_PENDING);
-            const userOrdersIds = userOrdersRaw.map((o: FxdxQueryOrder) => o.order_id);
-
-            const orderBook = openOrdersToOrderBook_(userOrdersRaw);
-            let configOrders = getOrderBookFromConfig(config, indexPrice, baseQuantity, quoteQuantity);
-
-            if (userOrdersRaw.length > 0) {
-                randomSleepTimeMs = await makeHFT(fxdx, fxdxHFT, symbol, mandatoryHftIter, orderTypeStreak);
-            }
-
-            if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
-                const orders = [
-                    ...configOrders.buy.map((o) => ({
-                        type: FxDxBuy, symbol: symbol,
-                        price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-                        amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-                    })),
-                    ...configOrders.sell.map((o) => ({
-                        type: FxDxSell, symbol: symbol,
-                        price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
-                        amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
-                    }))
-                ];
-
-                try {
-                    await fxdx.batchCancelOrders(symbol, userOrdersIds);
-
-                    const batchOpsResponse = await fxdx.batchOrders(orders);
-                    if (batchOpsResponse.data.code != 200) {
-                        log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
-                    }
-                } catch (e) {
-                    log(`makeMarket ${e}`);
-                }
-            }
-
-            console.log(`Waiting ${orderDelayMs}ms`);
-            await sleep(orderDelayMs - randomSleepTimeMs);
-        } catch (e) {
-            log(`main ${e}`);
         }
+
+        if (isMakeMarketNeeded(orderBook, configOrders, config.priceThreshold, config.quantityThreshold)) {
+            const orders = [
+                ...configOrders.buy.map((o) => ({
+                    type: FxDxBuy, symbol: symbol,
+                    price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                    amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+                })),
+                ...configOrders.sell.map((o) => ({
+                    type: FxDxSell, symbol: symbol,
+                    price: Number.parseFloat(o.price.toFixed(FIXED_NUMBER)), 
+                    amount: Number.parseFloat(o.quantity.toFixed(FIXED_NUMBER))
+                }))
+            ];
+
+            try {
+                await fxdx.batchCancelOrders(symbol, userOrdersIds);
+
+                const batchOpsResponse = await fxdx.batchOrders(orders);
+                if (batchOpsResponse.data.code != 200) {
+                    log(`makeMarket ${JSON.stringify(batchOpsResponse.data)}`);
+                }
+            } catch (e) {
+                log(`makeMarket ${e}`);
+            }
+        }
+
+        console.log(`Waiting ${orderDelayMs}ms`);
+        await sleep(orderDelayMs - randomSleepTimeMs);
     }
 }

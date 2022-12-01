@@ -171,7 +171,9 @@ export class Fxdx {
             timeout: AXIOS_TIMEOUT_MS
         });
 
-        return await client.post(apiPath, body);
+        const response = await client.post(apiPath, body);
+
+        if (response.status != 200) { throw new Error(`makeOrder. status != 200. ${response.data}`); }
     }
 
     async batchCancelOrders(symbol: string, ids: string[]) {
@@ -209,7 +211,11 @@ export class Fxdx {
             apiPath
         )).get();
         
-        const balances = (await this.authGet(headers, apiPath)).data.data
+        const response = await this.authGet(headers, apiPath);
+
+        if (response.status != 200) { throw new Error(`getBalances. status != 200. ${response.data}`); }
+
+        const balances = (response).data.data;
 
         return {
             base: balances.find((el: any) => el.name == base_),
@@ -228,13 +234,20 @@ export class Fxdx {
             apiPath
         )).get();
 
-        return (await this.authGet(headers, apiPath, queryParams)).data.data;
+        const response = await this.authGet(headers, apiPath, queryParams);
+
+        if (response.status != 200) { throw new Error(`getQueryOrders. status != 200. ${response.data}`); }
+
+        return (response).data.data;
     }
 
     async getOrderbook(symbol: string) {
         const client = axios.create({baseURL: this.apiUrl, timeout: AXIOS_TIMEOUT_MS});
+        const response = await client.get(`${this.ORDERBOOK}/${symbol}`);
 
-        return await client.get(`${this.ORDERBOOK}/${symbol}`);
+        if (response.status != 200) { throw new Error(`getOrderbook. status != 200. ${response.data}`); }
+
+        return response.data;
     }
 }
 
