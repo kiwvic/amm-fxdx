@@ -64,6 +64,17 @@ export const getRandomArbitrary = (min: number, max: number) => {
 }
 
 
+export const getRandomDecimal = (min: number, max: number) => {
+  return Math.random() * (max - min) + min;
+}
+
+
+export const toFixedNoRound = (number: number, precision: number): number => {
+  const factor = Math.pow(10, precision);
+  return Math.floor(number * factor) / factor;
+}
+
+
 export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: OrderTypeStreak) => {
   const config = getProgramConfig()
 
@@ -83,14 +94,15 @@ export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: Orde
 export const calculateBestPrice = (orderType: number, bestBid: number, bestAsk: number) => {
   const config = getProgramConfig()
 
+  // TODO
   let price = orderType == FxDxBuy ? bestAsk : bestBid;
   if (orderType == FxDxBuy) {
-      price -= price * (config.orderPricePercentHft / 100);
+      price -= price * (getRandomDecimal(0, config.orderPricePercentHft) / 100);
   } else {
-      price += price * (config.orderPricePercentHft / 100);
+      price += price * (getRandomDecimal(0, config.orderPricePercentHft) / 100);
   }
 
-  return parseFloat(price.toFixed(FIXED_NUMBER));
+  return toFixedNoRound(price, FIXED_NUMBER);
 }
   
 export const getOrderConfig = async () => {
