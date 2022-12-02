@@ -263,7 +263,8 @@ export async function makeMarket(params: MarketMakerParams) {
         }
         log(`makeMarket. after`);
 
-        console.log(`Waiting ${orderDelayMs}ms`);
+        log(`orderDelayMs: ${orderDelayMs}, ${randomSleepTimeMs}`);
+        log(`orderDelayMs - randomSleepTimeMs: ${orderDelayMs - randomSleepTimeMs}`);
         await sleep(orderDelayMs - randomSleepTimeMs);
         log("makeMarket. end");
     }
