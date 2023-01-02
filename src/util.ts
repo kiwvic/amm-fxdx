@@ -74,6 +74,10 @@ export const toFixedNoRound = (number: number, precision: number): number => {
   return Math.floor(number * factor) / factor;
 }
 
+export const round = (value: number, precision: number) => {
+  var factor = Math.pow(10, precision || 0);
+  return Math.round(value * factor) / factor;
+}
 
 export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: OrderTypeStreak) => {
   const config = getProgramConfig()
@@ -91,18 +95,17 @@ export const orderTypeChangeIsNeeded = (orderType: number, orderTypeStreak: Orde
   return false;
 }
 
-export const calculateBestPrice = (orderType: number, bestBid: number, bestAsk: number) => {
-  const config = getProgramConfig()
+export const calculateBestPrice = (bestBid: number, bestAsk: number) => {
+  let randomDecimal = toFixedNoRound(getRandomDecimal(bestAsk, bestBid), FIXED_NUMBER);
 
-  // TODO
-  let price = orderType == FxDxBuy ? bestAsk : bestBid;
-  if (orderType == FxDxBuy) {
-      price -= price * (getRandomDecimal(0, config.orderPricePercentHft) / 100);
-  } else {
-      price += price * (getRandomDecimal(0, config.orderPricePercentHft) / 100);
+  const extra = round(Math.pow(10, -FIXED_NUMBER), FIXED_NUMBER);
+  if (randomDecimal == bestAsk) {
+    randomDecimal -= extra;
+  } else if (randomDecimal == bestBid) {
+    randomDecimal += extra;
   }
 
-  return toFixedNoRound(price, FIXED_NUMBER);
+  return toFixedNoRound(randomDecimal, FIXED_NUMBER);
 }
   
 export const getOrderConfig = async () => {

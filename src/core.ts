@@ -110,7 +110,7 @@ async function makeHFT(
     const bestAskPrice = parseFloat(Number(orderBook.asks[0][0]).toFixed(FIXED_NUMBER));
     const bestBidPrice = parseFloat(Number(orderBook.bids[0][0]).toFixed(FIXED_NUMBER));
 
-    let price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+    let price = calculateBestPrice(bestBidPrice, bestAskPrice);
 
     if (notEnoughFunds(balances, randomAmount, price) && notEnoughFunds(balancesHFT, randomAmount, price)) {
         log(`Not enough funds on each balance!`);
@@ -121,13 +121,13 @@ async function makeHFT(
     if (orderType == FxDxBuy) {
         if (balancesHFT.quote.available < randomAmount * price || balances.base.available < randomAmount) {
             orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
-            price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+            price = calculateBestPrice(bestBidPrice, bestAskPrice);
             forceChangeOrderType = true;
         }
     } else {
         if (balancesHFT.base.available < randomAmount || balances.quote.available < randomAmount * price) {
             orderType = orderType == FxDxBuy ? FxDxSell : FxDxBuy;
-            price = calculateBestPrice(orderType, bestBidPrice, bestAskPrice);
+            price = calculateBestPrice(bestBidPrice, bestAskPrice);
             forceChangeOrderType = true;
         }
     }
